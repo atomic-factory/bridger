@@ -12,20 +12,20 @@ pub trait EthereumBacking: System {}
 /// PendingHeaders Storage
 #[derive(Clone, Debug, Eq, PartialEq, Store, Encode)]
 pub struct VerifiedProof<T: EthereumBacking> {
-    #[store(returns = Option<bool>)]
-    /// Receipt tx hash
-    pub map: ([u8; 32], u64),
-    /// Runtime marker
-    pub _runtime: PhantomData<T>,
+	#[store(returns = Option<bool>)]
+	/// Receipt tx hash
+	pub map: ([u8; 32], u64),
+	/// Runtime marker
+	pub _runtime: PhantomData<T>,
 }
 
 /// Submit redeem call
 #[derive(Clone, Debug, PartialEq, Call, Encode)]
 pub struct Redeem<T: EthereumBacking> {
-    /// Runtime marker
-    pub _runtime: PhantomData<T>,
-    /// Token type
-    pub act: RedeemFor,
-    /// Ethereum Receipt Proof
-    pub proof: EthereumReceiptProofThing,
+	/// Runtime marker
+	pub _runtime: PhantomData<T>,
+	/// Token type
+	pub act: RedeemFor,
+	/// Ethereum Receipt Proof
+	pub proof: EthereumReceiptProofThing,
 }

@@ -1,3 +1,20 @@
-**/*.DS_Store
-/target
+# Cross Compile Things
+wasm
+
+# IDE Things
 .idea
+.vscode
+expand.rs
+.ignore
+
+# macOS Things
+.DS_Store
+
+# PM2 Things
+.pm2.json
+
+# Rust Things
+**/*.rs.bk
+**/target/
+.cargo-ok
+Cargo.toml.bak
