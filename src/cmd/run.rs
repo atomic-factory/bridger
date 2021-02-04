@@ -95,8 +95,11 @@ async fn run(data_dir: Option<PathBuf>) -> Result<()> {
 
 	// --- Init APIs ---
 	let shadow = Arc::new(Shadow::new(&config));
+	info!("1------------------");
 	let darwinia = Arc::new(Darwinia::new(&config).await?);
+	info!("2------------------");
 	let web3 = Web3::new(Http::new(&config.ethereum.rpc).unwrap());
+	info!("3------------------");
 
 	// Stop if darwinia sender is authority but without a signer seed
 	if darwinia
@@ -107,10 +110,13 @@ async fn run(data_dir: Option<PathBuf>) -> Result<()> {
 		return Err(Error::NoAuthoritySignerSeed.into());
 	}
 
+	info!("4------------------");
 	// --- Network ---
 	let runtime_version: sp_version::RuntimeVersion =
 		darwinia.client.rpc.runtime_version(None).await?;
+	info!("5------------------");
 	let spec_name = runtime_version.spec_name.to_string();
+	info!("6------------------");
 
 	// --- Print startup info ---
 	info!("🔗 Connect to");
