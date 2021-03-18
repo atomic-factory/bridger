@@ -90,9 +90,10 @@ impl Darwinia {
 			}
 		}
 
-		Err(
-			Error::NoStorageDataFound(module_name.to_string(), storage_name.to_string())
-		)
+		Err(Error::NoStorageDataFound(
+			module_name.to_string(),
+			storage_name.to_string(),
+		))
 	}
 
 	/// get runtime version
@@ -170,7 +171,10 @@ impl Darwinia {
 				let parent_mmr_root = digest_item.as_other().unwrap().to_vec();
 				let parent_mmr_root = &parent_mmr_root[4..];
 				if parent_mmr_root.len() != 32 {
-					return Err(Error::WrongMmrRootInDarwiniaHeader(array_bytes::bytes2hex("", &parent_mmr_root), block_number));
+					return Err(Error::WrongMmrRootInDarwiniaHeader(
+						array_bytes::bytes2hex("", &parent_mmr_root),
+						block_number,
+					));
 				}
 				let mut mmr_root: [u8; 32] = [0; 32];
 				mmr_root.copy_from_slice(&parent_mmr_root);

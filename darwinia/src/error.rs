@@ -32,7 +32,7 @@ pub enum Error {
 
 	#[error("`bytes2hex` - FAILED: {0}")]
 	Bytes2Hex(String),
-  
+
 	#[error("`hex2bytes` - FAILED: {0}")]
 	Hex2Bytes(String),
 
