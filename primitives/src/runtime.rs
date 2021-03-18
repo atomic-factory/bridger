@@ -23,7 +23,7 @@ use substrate_subxt::{
 	sp_runtime::{
 		generic::Header,
 		traits::{BlakeTwo256, IdentifyAccount, Verify},
-		MultiSignature, OpaqueExtrinsic,
+		AccountId32, MultiSignature, OpaqueExtrinsic,
 	},
 	system::System,
 	Runtime,
@@ -47,7 +47,7 @@ impl System for DarwiniaRuntime {
 	type Hash = sp_core::H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = <<MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
-	type Address = Self::AccountId;
+	type Address = MultiAddress<Self::AccountId, ()>;
 	type Header = Header<Self::BlockNumber, BlakeTwo256>;
 	type Extrinsic = OpaqueExtrinsic;
 	type AccountData = AccountData<<Self as Balances>::Balance>;
@@ -121,7 +121,6 @@ impl EthereumRelayAuthorities for DarwiniaRuntime {
 	type RelayAuthoritySignature = EcdsaSignature;
 	type RelayAuthorityMessage = EcdsaMessage;
 }
-
 use codec::{Decode, Encode};
 
 /// EcdsaAddress
@@ -139,3 +138,18 @@ impl Default for EcdsaSignature {
 
 /// EcdsaMessage
 pub type EcdsaMessage = [u8; 32];
+
+#[allow(missing_docs)]
+#[derive(Clone, Debug, PartialEq, Encode, Decode)]
+pub enum MultiAddress<AccountId, AccountIndex> {
+	Id(AccountId),
+	Index(AccountIndex),
+	Raw(Vec<u8>),
+	Address32([u8; 32]),
+	Address20([u8; 20]),
+}
+impl From<AccountId32> for MultiAddress<AccountId32, ()> {
+	fn from(act: AccountId32) -> Self {
+		Self::Id(act)
+	}
+}
