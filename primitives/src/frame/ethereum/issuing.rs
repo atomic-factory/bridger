@@ -3,8 +3,8 @@ use crate::chain::ethereum::EthereumReceiptProofThing;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use substrate_subxt::{
-	balances::{Balances, BalancesEventsDecoder},
-	system::{System, SystemEventsDecoder},
+	balances::Balances,
+	system::System,
 };
 use substrate_subxt_proc_macro::{module, Call, Store};
 
