@@ -22,15 +22,14 @@ use crate::frame::bridge::relay_authorities::RelayAuthority;
 use substrate_subxt::{
 	balances::{AccountData, Balances},
 	extrinsic::DefaultExtra,
-	sp_core,
+	register_default_type_sizes, sp_core,
 	sp_runtime::{
 		generic::Header,
 		traits::{BlakeTwo256, IdentifyAccount, Verify},
-		MultiSignature, OpaqueExtrinsic,
+		MultiAddress, MultiSignature, OpaqueExtrinsic,
 	},
 	system::System,
-	Runtime,
-	EventTypeRegistry,
+	EventTypeRegistry, Runtime,
 };
 
 use sp_core::H256;
@@ -55,10 +54,10 @@ impl Runtime for DarwiniaRuntime {
 		registry.register_type_size::<u8>("ElectionCompute"); // just a hack
 		registry.register_type_size::<u32>("Term");
 		registry.register_type_size::<u64>("EthereumTransactionIndex");
-		registry.register_type_size::<(u32, u32)>("TaskAddress<BlockNumber>");
 		registry.register_type_size::<(u64, u32, u32)>("RelayAffirmationId");
 		registry.register_type_size::<u32>("EraIndex");
 		registry.register_type_size::<u64>("EthereumBlockNumber");
+		register_default_type_sizes(registry);
 	}
 }
 
@@ -72,7 +71,7 @@ impl System for DarwiniaRuntime {
 	type Hash = sp_core::H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = <<MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
-	type Address = Self::AccountId;
+	type Address = MultiAddress<Self::AccountId, ()>;
 	type Header = Header<Self::BlockNumber, BlakeTwo256>;
 	type Extrinsic = OpaqueExtrinsic;
 	type AccountData = AccountData<<Self as Balances>::Balance>;
