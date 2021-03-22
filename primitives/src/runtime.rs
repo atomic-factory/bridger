@@ -32,7 +32,16 @@ use substrate_subxt::{
 	EventTypeRegistry, Runtime,
 };
 
-use sp_core::H256;
+use sp_core::{H256, H160};
+
+type SessionIndex = u32;
+
+#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode)]
+struct Log {
+    address: H160,
+    topics: Vec<H256>,
+    data: Vec<u8>,
+}
 
 /// Darwinia Runtime
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -57,6 +66,10 @@ impl Runtime for DarwiniaRuntime {
 		registry.register_type_size::<(u64, u32, u32)>("RelayAffirmationId");
 		registry.register_type_size::<u32>("EraIndex");
 		registry.register_type_size::<u64>("EthereumBlockNumber");
+		registry.register_type_size::<Self::BlockNumber>("BlockNumber");
+		registry.register_type_size::<Self::AccountId>("AccountId");
+		registry.register_type_size::<SessionIndex>("SessionIndex");
+		registry.register_type_size::<Log>("Log");
 		register_default_type_sizes(registry);
 	}
 }
