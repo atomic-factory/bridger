@@ -32,15 +32,15 @@ use substrate_subxt::{
 	EventTypeRegistry, Runtime,
 };
 
-use sp_core::{H256, H160};
+use sp_core::{H160, H256};
 
 type SessionIndex = u32;
 
 #[derive(Clone, Debug, PartialEq, Eq, Encode, Decode)]
 struct Log {
-    address: H160,
-    topics: Vec<H256>,
-    data: Vec<u8>,
+	address: H160,
+	topics: Vec<H256>,
+	data: Vec<u8>,
 }
 
 /// Darwinia Runtime
