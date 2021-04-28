@@ -44,6 +44,8 @@ pub struct ContractAddress {
 	pub register: H256,
 	/// lock token on ethereum and redeem from darwinia
 	pub lock: H256,
+	/// burn mapped token on ethereum and unlock from darwinia
+	pub unlock: H256,
 }
 
 /// Ethereum transaction service
@@ -51,7 +53,7 @@ pub struct ContractAddress {
 /// This service can check and scan darwinia txs in Ethereum
 pub struct EthereumService {
 	contracts: ContractAddress,
-	filters: [FilterBuilder; 4],
+	filters: [FilterBuilder; 5],
 	web3: Web3<Http>,
 	darwinia: Darwinia,
 	scan_from: u64,
@@ -150,7 +152,7 @@ impl EthereumService {
 	async fn do_scan(
 		web3: Web3<Http>,
 		contracts: ContractAddress,
-		filters: [FilterBuilder; 4],
+		filters: [FilterBuilder; 5],
 		from: u64,
 		to: u64,
 	) -> BridgerResult<Vec<EthereumTransaction>> {
@@ -217,6 +219,15 @@ impl EthereumService {
 								block,
 								index,
 							}
+						} else if l.topics.contains(&contracts.unlock) {
+							EthereumTransaction {
+								tx_hash: EthereumTransactionHash::UnlockMappedErc20Token(
+									l.transaction_hash.unwrap_or_default(),
+								),
+								block_hash: l.block_hash.unwrap_or_default(),
+								block,
+								index,
+							}
 						} else {
 							EthereumTransaction {
 								tx_hash: EthereumTransactionHash::Deposit(
@@ -239,7 +250,7 @@ impl EthereumService {
 		darwinia: Darwinia,
 		web3: Web3<Http>,
 		contracts: ContractAddress,
-		filters: [FilterBuilder; 4],
+		filters: [FilterBuilder; 5],
 		scan_from: u64,
 		relay_service: Recipient<MsgBlockNumber>,
 		redeem_service: Recipient<MsgEthereumTransaction>,
@@ -315,6 +326,7 @@ impl EthereumService {
 		let kton_topics = contract.kton.topics.clone().unwrap();
 		let relay_topics = contract.relay.topics.clone().unwrap();
 		let backing_topics = contract.backing.topics.clone().unwrap();
+		let mapping_token_factory_topics = contract.mapping_token_factory.topics.clone().unwrap();
 		ContractAddress {
 			bank: H256::from_slice(&bytes!(bank_topics[0].as_str())),
 			kton: H256::from_slice(&bytes!(kton_topics[0].as_str())),
@@ -322,16 +334,19 @@ impl EthereumService {
 			relay: H256::from_slice(&bytes!(relay_topics[0].as_str())),
 			register: H256::from_slice(&bytes!(backing_topics[0].as_str())),
 			lock: H256::from_slice(&bytes!(backing_topics[1].as_str())),
+			// MappingTokenBurned
+			unlock: H256::from_slice(&bytes!(mapping_token_factory_topics[0].as_str())),
 		}
 	}
 
 	/// Parse log filter from config
-	pub fn parse_filter(config: &Settings) -> [FilterBuilder; 4] {
+	pub fn parse_filter(config: &Settings) -> [FilterBuilder; 5] {
 		let filters = [
 			&config.ethereum.contract.bank,
 			&config.ethereum.contract.issuing,
 			&config.ethereum.contract.backing,
 			&config.ethereum.contract.relay,
+			&config.ethereum.contract.mapping_token_factory,
 		]
 		.iter()
 		.map(|c| {
@@ -353,6 +368,7 @@ impl EthereumService {
 			filters[1].clone(),
 			filters[2].clone(),
 			filters[3].clone(),
+			filters[4].clone(),
 		]
 	}
 

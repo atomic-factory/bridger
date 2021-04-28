@@ -23,6 +23,8 @@ pub enum RedeemFor {
 	RegisterErc20Token,
 	/// Redeem for erc20 token
 	RedeemErc20Token,
+	/// Redeem for unlocked erc20 token
+	UnlockMappedErc20Token,
 }
 
 impl Default for RedeemFor {

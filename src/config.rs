@@ -45,6 +45,8 @@ pub struct EthereumContract {
 	pub relay: EthereumContractTuple,
 	/// Backing Contract
 	pub backing: EthereumContractTuple,
+	/// MappingTokenFactory Contract
+	pub mapping_token_factory: EthereumContractTuple,
 }
 
 /// Ethereum Relayer

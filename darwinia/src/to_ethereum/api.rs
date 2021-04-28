@@ -16,7 +16,9 @@ use primitives::{
 			NextTermStoreExt, SubmitSignedAuthorities, SubmitSignedAuthoritiesCallExt,
 			SubmitSignedMmrRoot, SubmitSignedMmrRootCallExt,
 		},
-		ethereum::backing::{SyncAuthoritiesChange, SyncAuthoritiesChangeCallExt},
+		ethereum::backing::{
+			SyncAuthoritiesChange, SyncAuthoritiesChangeCallExt, UnlockErc20, UnlockErc20CallExt,
+		},
 		proxy::ProxyCallExt,
 	},
 	runtime::{EcdsaAddress, EcdsaMessage},
@@ -342,5 +344,39 @@ impl Darwinia2Ethereum {
 			}
 		}
 		Ok(())
+	}
+
+	/// send unlock mapped erc20 token proof information to darwinia network to unlock original
+	/// locked token
+	pub async fn unlock_mapped_erc20_token(
+		&self,
+		account: &Account,
+		proof: EthereumReceiptProofThing,
+	) -> Result<H256> {
+		match &account.0.real {
+			Some(real) => {
+				let call = UnlockErc20 {
+					_runtime: PhantomData::default(),
+					proof,
+				};
+
+				let ex = self.darwinia.subxt.encode(call).unwrap();
+				Ok(self
+					.darwinia
+					.subxt
+					.proxy(
+						&account.0.signer,
+						real.clone(),
+						Some(ProxyType::EthereumBridge),
+						&ex,
+					)
+					.await?)
+			}
+			None => Ok(self
+				.darwinia
+				.subxt
+				.unlock_erc20(&account.0.signer, proof)
+				.await?),
+		}
 	}
 }

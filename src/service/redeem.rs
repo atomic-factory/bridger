@@ -26,6 +26,8 @@ pub enum EthereumTransactionHash {
 	RegisterErc20Token(H256),
 	/// RedeemErc20Token
 	RedeemErc20Token(H256),
+	/// UnlockMappedErc20Token
+	UnlockMappedErc20Token(H256),
 }
 
 /// Reedeemable Ethereum transaction
@@ -50,6 +52,7 @@ impl EthereumTransaction {
 			EthereumTransactionHash::SetAuthorities(h) => h,
 			EthereumTransactionHash::RegisterErc20Token(h) => h,
 			EthereumTransactionHash::RedeemErc20Token(h) => h,
+			EthereumTransactionHash::UnlockMappedErc20Token(h) => h,
 		}
 	}
 }
@@ -197,6 +200,7 @@ impl RedeemService {
 			EthereumTransactionHash::SetAuthorities(_) => RedeemFor::SetAuthorities,
 			EthereumTransactionHash::RegisterErc20Token(_) => RedeemFor::RegisterErc20Token,
 			EthereumTransactionHash::RedeemErc20Token(_) => RedeemFor::RedeemErc20Token,
+			EthereumTransactionHash::UnlockMappedErc20Token(_) => RedeemFor::UnlockMappedErc20Token,
 		};
 
 		let ex = Extrinsic::Redeem(redeem_for, proof, tx);

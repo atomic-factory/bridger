@@ -35,6 +35,10 @@ ethereum:
       topics:
         - "0x0c403c4583ff520bad94bf49975b3547a573f7157070022cf8c9a023498d4d11"
         - "0xf70fbddcb43e433da621898f5f2628b0a644a77a4389ac2580c5b1de06382fe2"
+    mapping_token_factory:
+      address: "0x676f35e8ce02025c2ce72f8ad0a3df64e4182fed"
+      topics:
+        - "0x0f004ecf1cead92cf46fc0de109052d6a6d3ef94c18e52e969e228082d8b7131"
   # (optional) the person who will relay darwinia data to ethereum
   # Disable by removing or commenting
   relayer:

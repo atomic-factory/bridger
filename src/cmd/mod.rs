@@ -12,12 +12,12 @@ mod ecdsa;
 mod encrypt_conf;
 mod encrypt_key;
 mod guard;
-mod info_d2e;
 mod keys;
 mod run;
 mod set_darwinia_start;
 mod set_start;
 mod show_parcel;
+mod show_proof;
 mod sign_mmr_root;
 
 #[derive(StructOpt, Debug)]
@@ -90,7 +90,7 @@ enum Opt {
 		block: u64,
 	},
 	/// Get Darwinia to Ethereum proof info
-	InfoD2E {
+	ShowProof {
 		/// network name
 		#[structopt(short, long)]
 		network: String,
@@ -103,9 +103,12 @@ enum Opt {
 		/// sign block number
 		#[structopt(short, long)]
 		signblock: u64,
-		/// is token or ring/kton
+		/// the storage type
+		/// 0-native ring/kton
+		/// 1-backing d2e storage
+		/// 2-issuing e2d storage
 		#[structopt(short, long)]
-		istoken: bool,
+		storage: u64,
 	},
 	/// Sign MMR root
 	SignMMRRoot {
@@ -155,13 +158,13 @@ pub async fn exec() -> Result<()> {
 		Opt::SetDarwiniaStart { data_dir, block } => {
 			set_darwinia_start::exec(data_dir, block).await?
 		}
-		Opt::InfoD2E {
+		Opt::ShowProof {
 			network,
 			txblock,
 			mmrblock,
 			signblock,
-			istoken,
-		} => info_d2e::exec(network, txblock, mmrblock, signblock, istoken).await?,
+			storage,
+		} => show_proof::exec(network, txblock, mmrblock, signblock, storage).await?,
 		Opt::SignMMRRoot { network, mmrblock } => sign_mmr_root::exec(network, mmrblock).await?,
 		Opt::AffirmForce { block } => {
 			affirm_force::exec(block).await?;

@@ -174,6 +174,21 @@ impl ExtrinsicsService {
 							}
 						}
 					}
+					RedeemFor::UnlockMappedErc20Token => {
+						if let Some(darwinia2ethereum) = &darwinia2ethereum {
+							if let Some(relayer) = &darwinia2ethereum_relayer {
+								let ex_hash = darwinia2ethereum
+									.unlock_mapped_erc20_token(&relayer, proof)
+									.await?;
+								info!(
+									"unlock erc20 mapping token tx {:?} with extrinsic {:?}",
+									ethereum_tx.tx_hash, ex_hash
+								);
+							} else {
+								info!("cannot send tx without relayer account");
+							}
+						}
+					}
 					_ => {
 						if let Some(ethereum2darwinia) = &ethereum2darwinia {
 							if let Some(relayer) = &ethereum2darwinia_relayer {

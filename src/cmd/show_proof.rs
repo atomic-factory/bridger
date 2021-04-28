@@ -54,7 +54,7 @@ pub async fn exec(
 	txblock: u64,
 	mmrblock: u64,
 	signblock: u64,
-	istoken: bool,
+	storage: u64,
 ) -> Result<()> {
 	std::env::set_var("RUST_LOG", "info,darwinia_bridger");
 	env_logger::init();
@@ -78,10 +78,19 @@ pub async fn exec(
 		.await?;
 	let event_proof = darwinia
 		.get_event_proof(
-			array_bytes::hex2bytes(if istoken {
-				"e66f3de22eed97c730152f373193b5a0485b407d88f37d5fd6a2c59e5a696691"
-			} else {
-				"f8860dda3d08046cf2706b92bf7202eaae7a79191c90e76297e0895605b8b457"
+			array_bytes::hex2bytes(match storage {
+				0 => {
+					// native token lock proof storage, kton/ring
+					"f8860dda3d08046cf2706b92bf7202eaae7a79191c90e76297e0895605b8b457"
+				}
+				1 => {
+					// backing lock erc20 token proof storage
+					"f8860dda3d08046cf2706b92bf7202ea256a23d2f4769da54b2cf0e6d1370ee4"
+				}
+				_ => {
+					// issuing register or burn erc20 token proof storage
+					"e66f3de22eed97c730152f373193b5a0485b407d88f37d5fd6a2c59e5a696691"
+				}
 			})
 			.unwrap(),
 			header.hash(),

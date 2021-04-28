@@ -37,6 +37,15 @@ pub struct SyncAuthoritiesChange<T: EthereumBacking> {
 	pub proof: EthereumReceiptProofThing,
 }
 
+/// Submit unlock erc20 token
+#[derive(Clone, Debug, PartialEq, Call, Encode)]
+pub struct UnlockErc20<T: EthereumBacking> {
+	/// Runtime marker
+	pub _runtime: PhantomData<T>,
+	/// Ethereum Receipt Proof
+	pub proof: EthereumReceiptProofThing,
+}
+
 //////
 // Events
 //////
