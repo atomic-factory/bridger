@@ -43,6 +43,8 @@ struct Log {
 	data: Vec<u8>,
 }
 
+type OpaqueTimeSlot = Vec<u8>;
+
 /// Darwinia Runtime
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct DarwiniaRuntime;
@@ -62,7 +64,7 @@ impl Runtime for DarwiniaRuntime {
 		registry.register_type_size::<EcdsaSignature>("RelayAuthoritySignature");
 		registry.register_type_size::<u8>("ElectionCompute"); // just a hack
 		registry.register_type_size::<u32>("Term");
-		registry.register_type_size::<u64>("EthereumTransactionIndex");
+		registry.register_type_size::<(H256, u64)>("EthereumTransactionIndex");
 		registry.register_type_size::<(u64, u32, u32)>("RelayAffirmationId");
 		registry.register_type_size::<u32>("EraIndex");
 		registry.register_type_size::<u64>("EthereumBlockNumber");
@@ -74,6 +76,8 @@ impl Runtime for DarwiniaRuntime {
 		registry.register_type_size::<H256>("H256");
 		registry.register_type_size::<H160>("H160");
 		registry.register_type_size::<ExitReason>("ExitReason");
+		registry.register_type_size::<IdentificationTuple>("IdentificationTuple");
+		registry.register_type_size::<OpaqueTimeSlot>("OpaqueTimeSlot");
 		register_default_type_sizes(registry);
 	}
 }
@@ -230,3 +234,40 @@ enum ExitFatal {
 	CallErrorAsFatal(ExitError),
 	Other(String),
 }
+
+
+type Power = u32;
+
+/// A snapshot of the stake backing a single validator in the system.
+#[derive(Encode, Decode)]
+pub struct Exposure
+{
+	/// The validator's own stash that is exposed.
+	#[codec(compact)]
+	pub own_ring_balance: u128,
+	/// kton balance
+	#[codec(compact)]
+	pub own_kton_balance: u128,
+	/// power
+	pub own_power: Power,
+	/// The total balance backing this validator.
+	pub total_power: Power,
+	/// The portions of nominators stashes that are exposed.
+	pub others: Vec<IndividualExposure>,
+}
+
+/// The amount of exposure (to slashing) than an individual nominator has.
+#[derive(Encode, Decode)]
+pub struct IndividualExposure
+{
+	/// The stash account of the nominator in question.
+	who: <DarwiniaRuntime as System>::AccountId,
+	/// Amount of funds exposed.
+	#[codec(compact)]
+	ring_balance: u128,
+	#[codec(compact)]
+	kton_balance: u128,
+	power: Power,
+}
+
+type IdentificationTuple = (<DarwiniaRuntime as System>::AccountId, Exposure);
