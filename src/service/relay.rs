@@ -1,6 +1,10 @@
 //! Relay Service
 use crate::{api::Shadow, error::Result};
 use primitives::chain::ethereum::EthereumHeader;
+use primitives::frame::ethereum::{
+    relay::EthereumRelay,
+    game::EthereumRelayerGame,
+};
 use std::sync::Arc;
 
 use crate::error::BizError;
@@ -13,7 +17,8 @@ use std::time::Duration;
 
 use crate::tools;
 use darwinia::Ethereum2Darwinia;
-use primitives::runtimes::darwinia::DarwiniaRuntime;
+use substrate_subxt::Runtime;
+use substrate_subxt::balances::Balances;
 
 /// message 'block_number'
 #[derive(Clone, Debug)]
@@ -32,11 +37,11 @@ impl Message for MsgExecute {
 }
 
 /// Relay Service
-pub struct RelayService {
+pub struct RelayService<R: Runtime> {
 	/// Shadow API
 	pub shadow: Arc<Shadow>,
 	/// Dawrinia API
-	pub ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
+	pub ethereum2darwinia: Ethereum2Darwinia<R>,
 
 	target: u64,
 	relayed: u64,
@@ -45,7 +50,10 @@ pub struct RelayService {
 	extrinsics_service: Recipient<MsgExtrinsic>,
 }
 
-impl Actor for RelayService {
+impl<R: Runtime + Unpin> Actor for RelayService<R> 
+where <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin
+{
 	type Context = Context<Self>;
 
 	fn started(&mut self, ctx: &mut Self::Context) {
@@ -60,7 +68,10 @@ impl Actor for RelayService {
 	}
 }
 
-impl Handler<MsgBlockNumber> for RelayService {
+impl<R: Runtime + Unpin> Handler<MsgBlockNumber> for RelayService<R> 
+where <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin
+{
 	type Result = ();
 
 	fn handle(&mut self, msg: MsgBlockNumber, _: &mut Context<Self>) -> Self::Result {
@@ -70,7 +81,10 @@ impl Handler<MsgBlockNumber> for RelayService {
 	}
 }
 
-impl Handler<MsgExecute> for RelayService {
+impl<R: Runtime + Unpin> Handler<MsgExecute> for RelayService<R> 
+where <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin
+{
 	type Result = AtomicResponse<Self, ()>;
 
 	fn handle(&mut self, _: MsgExecute, _: &mut Context<Self>) -> Self::Result {
@@ -113,7 +127,10 @@ impl Handler<MsgExecute> for RelayService {
 	}
 }
 
-impl Handler<MsgStop> for RelayService {
+impl<R: Runtime + Unpin> Handler<MsgStop> for RelayService<R> 
+where <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin
+{
 	type Result = ();
 
 	fn handle(&mut self, _: MsgStop, ctx: &mut Context<Self>) -> Self::Result {
@@ -121,11 +138,11 @@ impl Handler<MsgStop> for RelayService {
 	}
 }
 
-impl RelayService {
+impl<R: Runtime + EthereumRelay + EthereumRelayerGame + Balances> RelayService<R> {
 	/// create new relay service actor
 	pub fn new(
 		shadow: Arc<Shadow>,
-		ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
+		ethereum2darwinia: Ethereum2Darwinia<R>,
 		last_confirmed: u64,
 		step: u64,
 		extrinsics_service: Recipient<MsgExtrinsic>,
@@ -142,7 +159,7 @@ impl RelayService {
 
 	/// affirm target block
 	pub async fn affirm(
-		ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
+		ethereum2darwinia: Ethereum2Darwinia<R>,
 		shadow: Arc<Shadow>,
 		target: u64,
 		extrinsics_service: Recipient<MsgExtrinsic>,
@@ -159,22 +176,22 @@ impl RelayService {
 		}
 
 		// 2. pendings check
-		let pending_headers = ethereum2darwinia.pending_headers().await?;
-		for pending_header in pending_headers {
-			let pending_block_number = pending_header.1.header.number;
-			if pending_block_number >= target {
-				return Err(BizError::AffirmingBlockInPending(target).into());
-			}
-		}
+		//let pending_headers = ethereum2darwinia.pending_headers().await?;
+		//for pending_header in pending_headers {
+			//let pending_block_number = pending_header.1.header.number;
+			//if pending_block_number >= target {
+				//return Err(BizError::AffirmingBlockInPending(target).into());
+			//}
+		//}
 
 		// 3. affirmations check
-		for (_game_id, game) in ethereum2darwinia.affirmations().await?.iter() {
-			for (_round_id, affirmations) in game.iter() {
-				if Ethereum2Darwinia::<DarwiniaRuntime>::contains(&affirmations, target) {
-					return Err(BizError::AffirmingBlockInGame(target).into());
-				}
-			}
-		}
+		//for (_game_id, game) in ethereum2darwinia.affirmations().await?.iter() {
+			//for (_round_id, affirmations) in game.iter() {
+				//if Ethereum2Darwinia::<R>::contains(affirmations.as_slice(), target) {
+					//return Err(BizError::AffirmingBlockInGame(target).into());
+				//}
+			//}
+		//}
 
 		trace!("Prepare to affirm ethereum block: {}", target);
 		let parcel = shadow.parcel(target as usize + 1).await.with_context(|| {

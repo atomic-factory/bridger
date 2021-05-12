@@ -11,10 +11,28 @@ use crate::tools;
 use primitives::chain::ethereum::{
 	EthereumReceiptProofThing, EthereumRelayHeaderParcel, RedeemFor,
 };
+use primitives::frame::{
+    ethereum::relay::EthereumRelay,
+    proxy::Proxy,
+};
 use primitives::chain::ethereum::EcdsaMessage;
 use std::path::PathBuf;
-use primitives::runtimes::darwinia::DarwiniaRuntime;
 use darwinia::{Darwinia2Ethereum, Ethereum2Darwinia, FromEthereumAccount, ToEthereumAccount};
+
+use substrate_subxt::Runtime;
+use substrate_subxt::{
+        system::System, SignedExtension, SignedExtra,
+};
+
+use substrate_subxt::sp_runtime::traits::Verify;
+
+use primitives::frame::ethereum::{
+    backing::EthereumBacking,
+    issuing::EthereumIssuing,
+};
+
+use primitives::frame::technical_committee::TechnicalCommittee;
+use primitives::frame::bridge::relay_authorities::EthereumRelayAuthorities;
 
 #[derive(Clone, Debug)]
 pub enum Extrinsic {
@@ -34,21 +52,26 @@ impl Message for MsgExtrinsic {
 }
 
 /// Extrinsics Service
-pub struct ExtrinsicsService {
+pub struct ExtrinsicsService<R: Runtime> {
 	/// Ethereum to Darwinia Client
-	pub ethereum2darwinia: Option<Ethereum2Darwinia<DarwiniaRuntime>>,
+	pub ethereum2darwinia: Option<Ethereum2Darwinia<R>>,
 	/// Dawrinia to Ethereum Client
-	pub darwinia2ethereum: Option<Darwinia2Ethereum<DarwiniaRuntime>>,
+	pub darwinia2ethereum: Option<Darwinia2Ethereum<R>>,
 	/// ethereum2darwinia relayer
-	pub ethereum2darwinia_relayer: Option<FromEthereumAccount<DarwiniaRuntime>>,
+	pub ethereum2darwinia_relayer: Option<FromEthereumAccount<R>>,
 	/// darwinia2ethereum relayer
-	pub darwinia2ethereum_relayer: Option<ToEthereumAccount<DarwiniaRuntime>>,
+	pub darwinia2ethereum_relayer: Option<ToEthereumAccount<R>>,
 
 	spec_name: String,
 	data_dir: PathBuf,
 }
 
-impl Actor for ExtrinsicsService {
+impl<R: Runtime + Unpin> Actor for ExtrinsicsService<R> 
+where <R as substrate_subxt::system::System>::AccountId: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::Index: Unpin
+{
 	type Context = Context<Self>;
 
 	fn started(&mut self, _: &mut Self::Context) {
@@ -60,7 +83,12 @@ impl Actor for ExtrinsicsService {
 	}
 }
 
-impl Handler<MsgExtrinsic> for ExtrinsicsService {
+impl<R: Runtime + Unpin> Handler<MsgExtrinsic> for ExtrinsicsService<R> 
+where <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::system::System>::Index: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::AccountId: Unpin
+{
 	type Result = AtomicResponse<Self, Result<()>>;
 
 	fn handle(&mut self, msg: MsgExtrinsic, _: &mut Context<Self>) -> Self::Result {
@@ -79,24 +107,31 @@ impl Handler<MsgExtrinsic> for ExtrinsicsService {
 	}
 }
 
-impl Handler<MsgStop> for ExtrinsicsService {
+impl<R: Runtime + Unpin + EthereumBacking> Handler<MsgStop> for ExtrinsicsService<R> 
+where <R as substrate_subxt::system::System>::AccountId: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::system::System>::Index: Unpin
+{
 	type Result = ();
 
-	fn handle(&mut self, _: MsgStop, ctx: &mut Context<Self>) -> Self::Result {
+	fn handle(&mut self, _: MsgStop, ctx: &mut Context<Self>) -> Self::Result 
+        where <R as substrate_subxt::system::System>::Hash: Unpin
+    {
 		ctx.stop();
 	}
 }
 
-impl ExtrinsicsService {
+impl<R: Runtime + Proxy + EthereumRelay + TechnicalCommittee + EthereumRelayAuthorities + EthereumBacking> ExtrinsicsService<R> {
 	/// New sign service
 	pub fn new(
-		ethereum2darwinia: Option<Ethereum2Darwinia<DarwiniaRuntime>>,
-		darwinia2ethereum: Option<Darwinia2Ethereum<DarwiniaRuntime>>,
-		ethereum2darwinia_relayer: Option<FromEthereumAccount<DarwiniaRuntime>>,
-		darwinia2ethereum_relayer: Option<ToEthereumAccount<DarwiniaRuntime>>,
+		ethereum2darwinia: Option<Ethereum2Darwinia<R>>,
+		darwinia2ethereum: Option<Darwinia2Ethereum<R>>,
+		ethereum2darwinia_relayer: Option<FromEthereumAccount<R>>,
+		darwinia2ethereum_relayer: Option<ToEthereumAccount<R>>,
 		spec_name: String,
 		data_dir: PathBuf,
-	) -> ExtrinsicsService {
+	) -> ExtrinsicsService<R> {
 		ExtrinsicsService {
 			ethereum2darwinia,
 			darwinia2ethereum,
@@ -109,14 +144,19 @@ impl ExtrinsicsService {
 
 	#[allow(clippy::too_many_arguments)]
 	async fn send_extrinsic(
-		ethereum2darwinia: Option<Ethereum2Darwinia<DarwiniaRuntime>>,
-		darwinia2ethereum: Option<Darwinia2Ethereum<DarwiniaRuntime>>,
-		ethereum2darwinia_relayer: Option<FromEthereumAccount<DarwiniaRuntime>>,
-		darwinia2ethereum_relayer: Option<ToEthereumAccount<DarwiniaRuntime>>,
+		ethereum2darwinia: Option<Ethereum2Darwinia<R>>,
+		darwinia2ethereum: Option<Darwinia2Ethereum<R>>,
+		ethereum2darwinia_relayer: Option<FromEthereumAccount<R>>,
+		darwinia2ethereum_relayer: Option<ToEthereumAccount<R>>,
 		extrinsic: Extrinsic,
 		spec_name: String,
 		data_dir: PathBuf,
-	) -> Result<()> {
+	) -> Result<()> 
+        where <R as substrate_subxt::system::System>::Address: From<<R as substrate_subxt::system::System>::AccountId>,
+              <R as substrate_subxt::Runtime>::Signature: From<substrate_subxt::sp_core::sr25519::Signature>,
+              <<<R as substrate_subxt::Runtime>::Extra as SignedExtra<R>>::Extra as SignedExtension>::AdditionalSigned: Send + Sync,
+              <<R as substrate_subxt::Runtime>::Signature as Verify>::Signer: From<substrate_subxt::sp_core::sr25519::Public>
+    {
 		match extrinsic {
 			Extrinsic::Affirm(parcel) => {
 				let block_number = parcel.header.number;

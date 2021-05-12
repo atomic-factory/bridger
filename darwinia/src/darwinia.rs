@@ -20,8 +20,7 @@ use primitives::frame::bridge::relay_authorities::EthereumRelayAuthorities;
 use primitives::frame::ethereum::{backing::EthereumBacking, issuing::EthereumIssuing};
 use primitives::frame::sudo::KeyStoreExt;
 use primitives::frame::sudo::Sudo;
-use substrate_subxt::sp_runtime::generic::Header;
-use substrate_subxt::sp_runtime::traits::{BlakeTwo256, Verify};
+use substrate_subxt::sp_runtime::traits::Verify;
 use substrate_subxt::system::System;
 
 pub struct Darwinia<R: Runtime> {
@@ -273,13 +272,11 @@ impl<R: Runtime> Darwinia<R> {
 	}
 
 	/// get block header by number
-	pub async fn get_block_by_number(&self, number: u32) -> Result<Header<u32, BlakeTwo256>>
-	where
-		R: System<Header = Header<u32, BlakeTwo256>, Hash = H256, BlockNumber = u32>,
+	pub async fn get_block_by_number(&self, number: BlockNumber) -> Result<<R as System>::Header>
 	{
 		match self
 			.subxt
-			.block_hash(Some(BlockNumber::from(number)))
+			.block_hash(Some(number))
 			.await?
 		{
 			Some(block_hash) => match self.subxt.header(Some(block_hash)).await? {
@@ -291,9 +288,7 @@ impl<R: Runtime> Darwinia<R> {
 	}
 
 	/// finalized_head
-	pub async fn finalized_head(&self) -> Result<H256>
-	where
-		R: System<Hash = H256>,
+	pub async fn finalized_head(&self) -> Result<<R as System>::Hash>
 	{
 		let hash = self.subxt.finalized_head().await?;
 		Ok(hash)
@@ -302,10 +297,8 @@ impl<R: Runtime> Darwinia<R> {
 	/// get block by hash
 	pub async fn get_block_number_by_hash(
 		&self,
-		block_hash: H256,
+		block_hash: <R as System>::Hash,
 	) -> Result<Option<<R as System>::BlockNumber>>
-	where
-		R: System<Hash = H256>,
 	{
 		let block = self.subxt.block(Some(block_hash)).await?;
 		if let Some(block) = block {

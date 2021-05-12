@@ -66,14 +66,14 @@ pub async fn exec(
 		let passwd = prompt_password_stdout("Please enter password:")?;
 		config.decrypt(&passwd)?;
 	}
-	let darwinia = darwinia_api::get_darwinia_instance(&config).await?;
+	let darwinia = darwinia_api::get_darwinia_instance::<DarwiniaRuntime>(&config).await?;
 	let darwinia2ethereum = darwinia_api::get_d2e_instance(darwinia.clone());
 	// mmr root block
 	let mmr_root = darwinia.get_mmr_root(mmrblock as u32).await?;
 	let message = Darwinia2Ethereum::<DarwiniaRuntime>::construct_mmr_root_message(network, mmrblock as u32, mmr_root);
 	//let message = web3::signing::keccak256(&encoded);
 
-	let header = darwinia.get_block_by_number(txblock as u32).await?;
+	let header = darwinia.get_block_by_number((txblock as u32).into()).await?;
 	let proof = darwinia2ethereum
 		.get_headermmr_genproof(txblock, mmrblock, header.hash())
 		.await?;

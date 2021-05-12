@@ -12,7 +12,7 @@ use web3::types::H256;
 
 use crate::tools;
 use darwinia::Ethereum2Darwinia;
-use primitives::runtimes::darwinia::DarwiniaRuntime;
+use substrate_subxt::Runtime;
 
 /// Ethereum transaction event with hash
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -79,17 +79,20 @@ impl Message for MsgEthereumTransaction {
 }
 
 /// Redeem Service
-pub struct RedeemService {
+pub struct RedeemService<R: Runtime> {
 	step: u64,
 	/// Shadow API
 	pub shadow: Arc<Shadow>,
 	/// Dawrinia API
-	pub ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
+	pub ethereum2darwinia: Ethereum2Darwinia<R>,
 
 	extrinsics_service: Recipient<MsgExtrinsic>,
 }
 
-impl Actor for RedeemService {
+impl<R: Runtime + Unpin> Actor for RedeemService<R> 
+where <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin
+{
 	type Context = Context<Self>;
 
 	fn started(&mut self, _ctx: &mut Self::Context) {
@@ -101,7 +104,10 @@ impl Actor for RedeemService {
 	}
 }
 
-impl Handler<MsgEthereumTransaction> for RedeemService {
+impl<R: Runtime + Unpin> Handler<MsgEthereumTransaction> for RedeemService<R> 
+where <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin
+{
 	type Result = AtomicResponse<Self, ()>;
 
 	fn handle(&mut self, msg: MsgEthereumTransaction, _: &mut Context<Self>) -> Self::Result {
@@ -137,7 +143,10 @@ impl Handler<MsgEthereumTransaction> for RedeemService {
 	}
 }
 
-impl Handler<MsgStop> for RedeemService {
+impl<R: Runtime + Unpin> Handler<MsgStop> for RedeemService<R> 
+where <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin,
+{
 	type Result = ();
 
 	fn handle(&mut self, _: MsgStop, ctx: &mut Context<Self>) -> Self::Result {
@@ -145,14 +154,14 @@ impl Handler<MsgStop> for RedeemService {
 	}
 }
 
-impl RedeemService {
+impl<R: Runtime> RedeemService<R> {
 	/// New redeem service
 	pub fn new(
 		shadow: Arc<Shadow>,
-		ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
+		ethereum2darwinia: Ethereum2Darwinia<R>,
 		step: u64,
 		extrinsics_service: Recipient<MsgExtrinsic>,
-	) -> RedeemService {
+	) -> RedeemService<R> {
 		RedeemService {
 			ethereum2darwinia,
 			shadow,
@@ -162,7 +171,7 @@ impl RedeemService {
 	}
 
 	async fn redeem(
-		ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
+		ethereum2darwinia: Ethereum2Darwinia<R>,
 		shadow: Arc<Shadow>,
 		tx: EthereumTransaction,
 		extrinsics_service: Recipient<MsgExtrinsic>,

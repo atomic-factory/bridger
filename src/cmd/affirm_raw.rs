@@ -1,6 +1,10 @@
 use crate::{api::darwinia_api, error::Result, Settings};
 use rpassword::prompt_password_stdout;
 
+use primitives::{
+    runtimes::darwinia::DarwiniaRuntime,
+};
+
 /// Affirm
 pub async fn exec(json: String) -> Result<()> {
 	std::env::set_var("RUST_LOG", "info,darwinia_bridger");
@@ -12,7 +16,7 @@ pub async fn exec(json: String) -> Result<()> {
 		let passwd = prompt_password_stdout("Please enter password:")?;
 		config.decrypt(&passwd)?;
 	}
-	let darwinia = darwinia_api::get_darwinia_instance(&config).await?;
+	let darwinia = darwinia_api::get_darwinia_instance::<DarwiniaRuntime>(&config).await?;
 	let ethereum2darwinia = darwinia_api::get_e2d_instance(darwinia);
 	let darwinia_account = darwinia_api::get_darwinia_account(&config);
 	let e2d_account = darwinia_api::get_e2d_account(darwinia_account);

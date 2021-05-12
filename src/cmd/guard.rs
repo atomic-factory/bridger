@@ -9,6 +9,8 @@ use actix::Actor;
 use rpassword::prompt_password_stdout;
 use std::sync::Arc;
 
+use primitives::runtimes::darwinia::DarwiniaRuntime;
+
 /// Run guard
 pub async fn exec() -> Result<()> {
 	std::env::set_var("RUST_LOG", "info,darwinia_bridger");
@@ -21,7 +23,7 @@ pub async fn exec() -> Result<()> {
 		config.decrypt(&passwd)?;
 	}
 	let shadow = Arc::new(Shadow::new(&config));
-	let darwinia = darwinia_api::get_darwinia_instance(&config).await?;
+	let darwinia = darwinia_api::get_darwinia_instance::<DarwiniaRuntime>(&config).await?;
 	let ethereum2darwinia = darwinia_api::get_e2d_instance(darwinia);
 	let from_ethereum_account =
 		darwinia_api::get_e2d_account(darwinia_api::get_darwinia_account(&config));

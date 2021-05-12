@@ -11,7 +11,8 @@ use crate::{
 
 use crate::tools;
 use darwinia::{Ethereum2Darwinia, FromEthereumAccount};
-use primitives::runtimes::darwinia::DarwiniaRuntime;
+
+use substrate_subxt::Runtime;
 
 #[derive(Clone, Debug)]
 struct MsgGuard;
@@ -21,18 +22,23 @@ impl Message for MsgGuard {
 }
 
 /// Redeem Service
-pub struct GuardService {
+pub struct GuardService<R: Runtime> {
 	step: u64,
 	/// Shadow API
 	pub shadow: Arc<Shadow>,
 	/// Ethereum to Dawrinia API
-	pub ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
+	pub ethereum2darwinia: Ethereum2Darwinia<R>,
 	/// Darwinia guard account
-	pub guard_account: FromEthereumAccount<DarwiniaRuntime>,
+	pub guard_account: FromEthereumAccount<R>,
 	extrinsics_service: Recipient<MsgExtrinsic>,
 }
 
-impl Actor for GuardService {
+impl<R: Runtime + Unpin> Actor for GuardService<R> 
+where <R as substrate_subxt::system::System>::AccountId: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::system::System>::Index: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin
+{
 	type Context = Context<Self>;
 
 	fn started(&mut self, ctx: &mut Self::Context) {
@@ -47,7 +53,12 @@ impl Actor for GuardService {
 	}
 }
 
-impl Handler<MsgGuard> for GuardService {
+impl<R: Runtime + Unpin> Handler<MsgGuard> for GuardService<R> 
+where <R as substrate_subxt::system::System>::AccountId: Unpin,
+      <R as substrate_subxt::system::System>::Index: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin
+{
 	type Result = AtomicResponse<Self, ()>;
 
 	fn handle(&mut self, _msg: MsgGuard, _: &mut Context<Self>) -> Self::Result {
@@ -76,7 +87,12 @@ impl Handler<MsgGuard> for GuardService {
 	}
 }
 
-impl Handler<MsgStop> for GuardService {
+impl<R: Runtime + Unpin> Handler<MsgStop> for GuardService<R> 
+where <R as substrate_subxt::system::System>::AccountId: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::system::System>::Index: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin
+{
 	type Result = ();
 
 	fn handle(&mut self, _: MsgStop, ctx: &mut Context<Self>) -> Self::Result {
@@ -84,16 +100,16 @@ impl Handler<MsgStop> for GuardService {
 	}
 }
 
-impl GuardService {
+impl<R: Runtime> GuardService<R> {
 	/// New redeem service
 	pub fn new(
 		shadow: Arc<Shadow>,
-		ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
-		guard_account: FromEthereumAccount<DarwiniaRuntime>,
+		ethereum2darwinia: Ethereum2Darwinia<R>,
+		guard_account: FromEthereumAccount<R>,
 		step: u64,
 		is_tech_comm_member: bool,
 		extrinsics_service: Recipient<MsgExtrinsic>,
-	) -> Option<GuardService> {
+	) -> Option<GuardService<R>> {
 		if is_tech_comm_member {
 			Some(GuardService {
 				ethereum2darwinia,
@@ -109,8 +125,8 @@ impl GuardService {
 	}
 
 	async fn guard(
-		ethereum2darwinia: Ethereum2Darwinia<DarwiniaRuntime>,
-		guard_account: FromEthereumAccount<DarwiniaRuntime>,
+		ethereum2darwinia: Ethereum2Darwinia<R>,
+		guard_account: FromEthereumAccount<R>,
 		shadow: Arc<Shadow>,
 		extrinsics_service: Recipient<MsgExtrinsic>,
 	) -> Result<()> {

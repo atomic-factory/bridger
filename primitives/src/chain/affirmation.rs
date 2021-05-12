@@ -28,6 +28,7 @@ pub struct RelayAffirmation<RelayHeaderParcel, Relayer, Balance, RelayHeaderId> 
 	pub verified_on_chain: bool,
 }
 
+#[cfg(feature = "runtime")]
 impl<AccountId: Display, Balance: Display> std::fmt::Display
 for RelayAffirmation<
 	EthereumRelayHeaderParcel,

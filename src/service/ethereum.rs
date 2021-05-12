@@ -19,8 +19,13 @@ use web3::{
 	Web3,
 };
 
+use substrate_subxt::Runtime;
 use darwinia::Darwinia;
-use primitives::runtimes::darwinia::DarwiniaRuntime;
+
+use primitives::frame::ethereum::{
+    backing::EthereumBacking,
+    issuing::EthereumIssuing,
+};
 
 #[derive(Clone, Debug)]
 struct MsgScan;
@@ -50,11 +55,11 @@ pub struct ContractAddress {
 /// Ethereum transaction service
 ///
 /// This service can check and scan darwinia txs in Ethereum
-pub struct EthereumService {
+pub struct EthereumService<R: Runtime> {
 	contracts: ContractAddress,
 	filters: [FilterBuilder; 4],
 	web3: Web3<Http>,
-	darwinia: Darwinia<DarwiniaRuntime>,
+	darwinia: Darwinia<R>,
 	scan_from: u64,
 	step: u64,
 
@@ -63,7 +68,10 @@ pub struct EthereumService {
 	data_dir: PathBuf,
 }
 
-impl Actor for EthereumService {
+impl<R: Runtime + Unpin> Actor for EthereumService<R> 
+where <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin
+{
 	type Context = Context<Self>;
 
 	fn started(&mut self, ctx: &mut Self::Context) {
@@ -78,7 +86,10 @@ impl Actor for EthereumService {
 	}
 }
 
-impl Handler<MsgScan> for EthereumService {
+impl<R: Runtime + Unpin> Handler<MsgScan> for EthereumService<R> 
+where <R as substrate_subxt::system::System>::Hash: Unpin,
+      <R as substrate_subxt::Runtime>::Extra: Unpin
+{
 	type Result = AtomicResponse<Self, ()>;
 
 	fn handle(&mut self, _msg: MsgScan, _: &mut Context<Self>) -> Self::Result {
@@ -112,7 +123,10 @@ impl Handler<MsgScan> for EthereumService {
 	}
 }
 
-impl Handler<MsgStop> for EthereumService {
+impl<R: Runtime + Unpin> Handler<MsgStop> for EthereumService<R> 
+where <R as substrate_subxt::Runtime>::Extra: Unpin,
+      <R as substrate_subxt::system::System>::Hash: Unpin
+{
 	type Result = ();
 
 	fn handle(&mut self, _: MsgStop, ctx: &mut Context<Self>) -> Self::Result {
@@ -120,17 +134,17 @@ impl Handler<MsgStop> for EthereumService {
 	}
 }
 
-impl EthereumService {
+impl<R: Runtime> EthereumService<R> {
 	/// New Ethereum Service with http
 	pub fn new(
 		config: Settings,
 		web3: Web3<Http>,
-		darwinia: Darwinia<DarwiniaRuntime>,
+		darwinia: Darwinia<R>,
 		scan_from: u64,
 		relay_service: Recipient<MsgBlockNumber>,
 		redeem_service: Recipient<MsgEthereumTransaction>,
 		data_dir: PathBuf,
-	) -> EthereumService {
+	) -> EthereumService<R> {
 		let step = config.services.ethereum.step;
 		let contracts = EthereumService::parse_contract(&config);
 		let filters = EthereumService::parse_filter(&config);
@@ -237,7 +251,7 @@ impl EthereumService {
 
 	#[allow(clippy::too_many_arguments)]
 	async fn scan(
-		darwinia: Darwinia<DarwiniaRuntime>,
+		darwinia: Darwinia<R>,
 		web3: Web3<Http>,
 		contracts: ContractAddress,
 		filters: [FilterBuilder; 4],

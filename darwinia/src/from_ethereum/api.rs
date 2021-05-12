@@ -45,10 +45,10 @@ use substrate_subxt::system::System;
 use substrate_subxt::{Runtime, SignedExtension, SignedExtra};
 
 type TrueRelayAffirmation<R> = RelayAffirmation<
-	EthereumRelayHeaderParcel,
-	<R as System>::AccountId,
-	<R as Balances>::Balance,
-	RelayAffirmationId<u64>,
+    EthereumRelayHeaderParcel,
+    <R as System>::AccountId,
+    <R as Balances>::Balance,
+    RelayAffirmationId<u64>,
 >;
 
 /// Dawrinia API
@@ -233,6 +233,7 @@ impl<R: Runtime> Ethereum2Darwinia<R> {
 		Ok(result)
 	}
 
+    /*
 	/// affirmations contains block?
 	pub fn contains(
 		affirmations: &[TrueRelayAffirmation<R>],
@@ -258,7 +259,7 @@ impl<R: Runtime> Ethereum2Darwinia<R> {
 
 		// TODO: How to play and join the game
 		false
-	}
+	}*/
 
 	/// Get pending headers
 	pub async fn pending_headers(&self) -> Result<Vec<PendingRelayHeaderParcel<R>>>
